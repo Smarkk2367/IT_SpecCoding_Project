@@ -23,7 +23,7 @@ RPS:
 2 000 000 / 30 / 24 / 3600 = 0,77 req/s
 
 Traffic:
- - average: 8 rps
- - peak normalny (burst 10x): 100 rps (zaokrąglmy w górę)
- - peak kampanii (burst normal x 5): 500 rps
- - viral/mocna popularność: > 1000 rps -- pod to robimy
+ - average: 0,8 rps
+ - peak normalny (burst 10x): 20 rps (zaokrąglmy w górę)
+ - peak kampanii (burst normal x 5): 100 rps
+ - viral/mocna popularność: > 500 rps -- pod to robimy

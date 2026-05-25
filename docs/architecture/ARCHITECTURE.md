@@ -9,22 +9,23 @@
 Dane z briefu: 200 000 kliknięć/miesiąc dziś → 2 000 000 za rok
 
 ```
-Kliknięć / dzień (dziś):           ______________________
-Kliknięć / sekundę (dziś):         ______________________
-Kliknięć / sekundę (za rok):       ______________________
-Rekordów w tabeli clicks po roku:  ______________________
-Szacowana wielkość tabeli clicks:  ______________________
-Raporty PDF / tydzień:             ______________________
+Kliknięć / dzień (dziś):           ~ 6700
+Kliknięć / sekundę (dziś):         ~ 0.08
+Kliknięć / dzień (za rok): ~ 66 700
+Kliknięć / sekundę (za rok):       ~ 0.8
+Rekordów w tabeli clicks po roku:   ~ 24 000
+Szacowana wielkość tabeli clicks:  ~ 13/14 GB (500 B na klik)
+Raporty PDF / tydzień:             teraz 40, za rok 200 (każdy dostaje 8.00 + max 15 min)
 ```
 
 Wnioski:
 
 ```
-Bottleneck #1 to __________________ ponieważ _________________________.
-Bottleneck #2 to __________________ ponieważ _________________________.
-Redirect NIE może iść do bazy ponieważ ________________________________.
-Cache jest potrzebny dla ______________ i trzymam w nim ________________.
-Zapis kliknięcia jest asynchroniczny ponieważ _________________________.
+Bottleneck #1 to baza ponieważ jednoczesne, częste inserty tworzą konflikty (contention) w bazie.
+Bottleneck #2 to parsing danych jak UserAgent i GeoIp ponieważ obciąża to CPU.
+Redirect NIE może iść do bazy ponieważ grozi to przebiciem limitu 80 ms.
+Cache jest potrzebny dla short linków i trzymam w nim mapowanie - short -> url + metadata.
+Zapis kliknięcia jest asynchroniczny ponieważ redirect musi być natychmiastowy, a zapisy do baz itp mogą mieć lekki delay.
 ```
 
 ---
