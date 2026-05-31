@@ -6,8 +6,8 @@
 
 ## Architektura
 
-- [ ] Back-of-envelope: obliczenia i wnioski wypełnione
-- [ ] C1: wszyscy aktorzy, systemy zewnętrzne z etykietami strzałek
+- [x] Back-of-envelope: obliczenia i wnioski wypełnione
+- [x] C1: wszyscy aktorzy, systemy zewnętrzne z etykietami strzałek
 - [ ] C2: każdy kontener ma technologię i odpowiedzialność
 - [ ] C2: każde połączenie ma protokół
 - [ ] C2: Worker jest osobnym kontenerem

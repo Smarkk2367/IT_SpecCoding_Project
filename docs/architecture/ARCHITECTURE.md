@@ -46,27 +46,37 @@ Zapis kliknięcia jest asynchroniczny ponieważ redirect musi być natychmiastow
 
 | Kontener | Technologia | Odpowiedzialność |
 |----------|-------------|-----------------|
-| | | |
-| | | |
-| | | |
-| | | |
+| Web API | Go + Fiber | Tworzenie linków, obsługa dashboardu, szybkie redirecty |
+| Redis | Redis + Redis Streams | cache, kolejkowanie, statystyki |
+| Worker |  Go Worker | Przetwarzanie kliknięć, GeoIP, User-Agent parsing, agregacje, alerty, generowanie raportów|
+| PostgreSQL | PostgreSQL | Przetwarzanie linków, kliknięć i agregatów statystycznych |
 
 ```
-Diagram połączeń (ASCII lub opis, z protokołami):
+Marketer komunikuje się z WebAPI przez HTTPS
 
+WebAPI odczytuje dane z PostgreSQL
 
+Gdy osoba klikająca klika w link, wysyłane jest żądanie do WebAPI, które pobiera informacje o linku z redis, i kliknięcie zostaje zapisane w redis Streams
 
+Worker odczytuje zdarzenia z redis streams
+
+Dashboard statystyk pobiera dane z Redis i Postgres
+
+Worker cyklicznie generuje raporty PDF
+
+Podczas generowania raportów i alertów Worker komunikuje się z Email Providerem
+
+Worker korzysta z GeoIP Database/Service, aby na podstawie adresu IP określić
 
 ```
 
 > Dlaczego Worker jest osobnym kontenerem?
-> _________________________________________________________________
+> Wykonuje zadania asynchroniczne jak generowanie pdf czy zbieranie geoip, oddzielenie go od redirectu pozwala na obniżenie latency
 
 > Dlaczego kliknięcie nie idzie od razu do bazy?
-> _________________________________________________________________
-
+> Uzależniłoby to redirect od bazy (trzeba by czekać na zapis)
 > Co trzymasz w cache i dlaczego?
-> _________________________________________________________________
+> Mapowanie, Datę wygaśnięcia, ID kampanii i klienta, Licznik statystyk realtime (Redirect nie musi strzelać do postgresa - mniejsze latency) 
 
 ---
 
