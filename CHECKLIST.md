@@ -8,14 +8,14 @@
 
 - [x] Back-of-envelope: obliczenia i wnioski wypełnione
 - [x] C1: wszyscy aktorzy, systemy zewnętrzne z etykietami strzałek
-- [ ] C2: każdy kontener ma technologię i odpowiedzialność
-- [ ] C2: każde połączenie ma protokół
-- [ ] C2: Worker jest osobnym kontenerem
-- [ ] Przepływ redirect: tabela z czasami, suma < 80ms
-- [ ] Przepływ kliknięcia: kroki + idempotency
-- [ ] Przepływ PDF: kroki + gdzie plik + jak user dostaje info
-- [ ] Failure scenarios: tabela wypełniona dla 5 komponentów
-- [ ] Indeksy: tabela z uzasadnieniami
+- [x] C2: każdy kontener ma technologię i odpowiedzialność
+- [x] C2: każde połączenie ma protokół
+- [x] C2: Worker jest osobnym kontenerem
+- [x] Przepływ redirect: tabela z czasami, suma < 80ms
+- [x] Przepływ kliknięcia: kroki + idempotency
+- [x] Przepływ PDF: kroki + gdzie plik + jak user dostaje info
+- [x] Failure scenarios: tabela wypełniona dla 5 komponentów
+- [x] Indeksy: tabela z uzasadnieniami
 
 ## ADR
 
