@@ -100,15 +100,14 @@ Co gdy Redis jest down:  Fallback do PostgreSQL dla lookupu linku. Kliknięcie z
 
 | Krok | Opis | Kto |
 |------|------|-----|
-| 1 | | |
-| 2 | | |
-| 3 | | |
-| 4 | | |
+| 1 | Redirect Service zapisuje zdarzenie kliknięcia do Redis Streams | Redirect Service |
+| 2 | Worker odczytuje zdarzenie z kolejki i wykonuje GeoIP oraz parsowanie User-Agent | Worker |
+| 3 | Worker zapisuje pełny rekord kliknięcia do PostgreSQL oraz aktualizuje agregaty statystyk | Worker |
+| 4 | Dashboard odczytuje zaktualizowane statystyki z Redis/PostgreSQL; kliknięcie staje się widoczne dla marketera | Web Api|
 
 ```
-Co gwarantuje że dane nie zginą:   ____________________
-Jak zapewniasz idempotentność:     ____________________
-```
+Co gwarantuje że dane nie zginą:   Redis Streams z włączoną persystencją oraz zapis kliknięcia do PostgreSQL
+Jak zapewniasz idempotentność:     Każde kliknięcie otrzymuje unikalny event_id, przed zapisem Worker sprawdza, czy event_id został już przetworzony
 
 ---
 
@@ -117,15 +116,14 @@ Jak zapewniasz idempotentność:     ____________________
 | Krok | Opis |
 |------|------|
 | 1 | Marketer klika "Generuj raport" |
-| 2 | |
-| 3 | |
-| 4 | |
+| 2 | Web API tworzy job raportowy i zapisuje go do kolejki (Redis Stream / queue) |
+| 3 | Worker pobiera job, agreguje dane (PostgreSQL + Redis), generuje PDF |
+| 4 | 	PDF jest zapisywany i udostępniany (storage + link), a status joba aktualizowany |
 
 ```
-Dlaczego async:                    ____________________
-Gdzie jest przechowywany PDF:      ____________________
-Jak marketer dostaje info:         ____________________
-```
+Dlaczego async:          Bo generowanie raportu jest kosztowne i nie może blokować requestu HTTP ani wpływać na SLA redirectów / dashboardu
+Gdzie jest przechowywany PDF:     W obiekcie storage, a w PostgreSQL trzymana jest tylko metadana i link do pliku
+Jak marketer dostaje info:        Dashboard polling/WebSocket/webhook status update + e-mail z linkiem do pobrania PDF po zakończeniu generowania
 
 ---
 
@@ -133,11 +131,11 @@ Jak marketer dostaje info:         ____________________
 
 | Komponent pada | Co robi system | Dane bezpieczne? |
 |---------------|----------------|-----------------|
-| Redis | | |
-| Broker kolejki | | |
-| Worker | | |
-| PostgreSQL | | |
-| API geo | | |
+| Redis | Redirect przełącza się na fallback (PostgreSQL lookup lub lokalny cache), zapis eventów trafia do outbox/persistent queue | Tak |
+| Broker kolejki | API zapisuje eventy do lokalnego outboxu (PostgreSQL lub disk queue), worker po powrocie przetwarza backlog | Tak |
+| Worker | Eventy pozostają w kolejce (Redis Streams / retry), po restarcie worker kontynuuje od ostatniego offsetu | Tak |
+| PostgreSQL | System przechodzi w tryb degraded: redirect działa (cache), eventy buforowane w Redis/outbox; brak możliwości trwałego zapisu agregatów | Tak |
+| API geo | Worker używa fallback cache / batch enrichment później; kliknięcia trafiają bez enrichu i są uzupełniane asynchronicznie | Tak |
 
 ---
 
@@ -145,5 +143,11 @@ Jak marketer dostaje info:         ____________________
 
 | Tabela | Kolumna(y) | Uzasadnienie |
 |--------|-----------|--------------|
-| | | |
-| | | |
+| links | short_code (UNIQUE) | Krytyczne dla redirectu — O(1) lookup skróconego linku do URL docelowego |
+| links | client_id, campaign_id | Szybkie filtrowanie linków per klient/kampania w dashboardzei |
+| links | expires_at| Skanowanie i wygaszanie linków (cleanup joby / walidacja aktywności)|
+| clicks | link_id, created_at | Podstawowy wzorzec zapytań statystycznych (time-series per link) |
+| clicks | country | Top countries bez pełnego skanowania tabeli |
+| clicks | device_type | Top devices |
+| clicks | referrer | Analiza źródeł ruchu |
+| clicks | event_id (UNIQUE)| idempotencja |
