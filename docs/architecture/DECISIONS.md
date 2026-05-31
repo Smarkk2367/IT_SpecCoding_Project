@@ -175,3 +175,28 @@ gdy wymagane będzie multi-region processing
 gdy Redis stanie się bottleneckiem
 
 ---
+
+## ADR-005 — Worker jako proces Go
+
+**Status: Zaakceptowana**
+
+**Kontekst:** Worker przetwarza kliknięcia, raporty i notyfikacje poza hot path redirectu. System ma być prosty w utrzymaniu przez jednego developera i uruchamiany przez Docker Compose.
+
+**Problem:** Jak zaimplementować workera, żeby nie mnożyć runtime'ów i zachować spójność z backendem?
+
+**Opcje:**
+- A: Worker w Node.js — łatwy dostęp do bibliotek typu `ua-parser-js`, `geoip-lite`, Puppeteer i Nodemailer / drugi runtime, osobny styl kodu, więcej zależności operacyjnych.
+- B: Worker w Go — jeden język dla API i workera, prostszy deployment, spójne modele i testy / trzeba użyć Go-odpowiedników bibliotek.
+
+**Decyzja:** Wybieram opcję B.
+
+**Uzasadnienie:** Skala v1 nie wymaga osobnego ekosystemu workerów. Jeden binarny runtime Go upraszcza Docker Compose, testy integracyjne i utrzymanie, a zadania workera można obsłużyć sprawdzonymi bibliotekami Go.
+
+**Konsekwencje:**
+(+) jeden język i wspólne typy kontraktów eventów
+(+) prostsze obrazy Docker i mniej ruchomych części
+(+) łatwiejsze testowanie `go test`
+(-) część bibliotek z WORKER.md ma inne odpowiedniki niż pierwotnie zapisane nazwy JS
+
+**Kiedy zrewidować:**
+jeśli generowanie PDF albo enrichment danych zacznie wymagać specjalistycznego środowiska Node/Chromium, którego nie da się stabilnie utrzymać w procesie Go

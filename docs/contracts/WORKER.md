@@ -15,7 +15,7 @@
 ## Integracje
 
 ### Geolokalizacja IP
-Biblioteka: geoip-lite (lokalna DB) lub ip-api.com (fallback HTTP)
+Biblioteka: `github.com/oschwald/geoip2-golang` + lokalna baza MaxMind GeoLite2 albo `ip-api.com` jako fallback HTTP
 
 Timeout: max 100ms
 
@@ -27,7 +27,7 @@ Przy timeout:
 ---
 
 ### Parser User-Agent
-Biblioteka: ua-parser-js
+Biblioteka: `github.com/mileusna/useragent`
 
 Pola:
 - device_type: mobile | desktop | tablet | null
@@ -37,7 +37,7 @@ Pola:
 ---
 
 ### Generowanie PDF
-Biblioteka: Puppeteer (HTML → PDF render)
+Biblioteka: `chromedp` + headless Chrome/Chromium (HTML → PDF render)
 
 Gdzie zapisujesz:
 - filesystem (VPS) + opcjonalnie MinIO (S3-compatible)
@@ -54,7 +54,7 @@ Po wygenerowaniu:
 
 ### Wysyłanie e-maili
 Dev: Mailhog (SMTP sandbox, UI http://localhost:8025)  
-Prod: Nodemailer + SMTP (np. Amazon SES / Resend / SendGrid)
+Prod: SMTP przez bibliotekę Go, np. `gopkg.in/gomail.v2` albo standardowe `net/smtp` (Amazon SES / Resend / SendGrid)
 
 From: noreply@trackflow.io
 
@@ -74,6 +74,6 @@ SMTP_FROM=noreply@trackflow.io
 
 PDF_STORAGE_PATH=/data/reports
 
-GEOIP_PROVIDER=geoip-lite
+GEOIP_PROVIDER=geoip2
 
 APP_ENV=production

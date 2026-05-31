@@ -1,2 +1,108 @@
-# docker-compose.yml
-# 📝 DO WYPEŁNIENIA — uzupełnij sekcje [WYPEŁNIJ]
+name: trackflow
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: trackflow
+      POSTGRES_USER: trackflow
+      POSTGRES_PASSWORD: trackflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations/001_initial_schema.up.sql:/docker-entrypoint-initdb.d/001_initial_schema.sql:ro
+      - ./migrations/002_seed_dev_users.up.sql:/docker-entrypoint-initdb.d/002_seed_dev_users.sql:ro
+      - ./migrations/003_outbox_events.up.sql:/docker-entrypoint-initdb.d/003_outbox_events.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trackflow -d trackflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        SERVICE: api
+    environment:
+      APP_ENV: development
+      HTTP_ADDR: :3000
+      DATABASE_URL: postgres://trackflow:trackflow@postgres:5432/trackflow?sslmode=disable
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: dev-trackflow-jwt-secret-change-me
+      PDF_STORAGE_PATH: /data/reports
+    ports:
+      - "3000:3000"
+    volumes:
+      - reports_data:/data/reports:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  worker:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        SERVICE: worker
+    environment:
+      APP_ENV: development
+      WORKER_HEALTH_ADDR: :3001
+      DATABASE_URL: postgres://trackflow:trackflow@postgres:5432/trackflow?sslmode=disable
+      REDIS_URL: redis://redis:6379/0
+      REDIS_CONSUMER_GROUP: trackflow-workers
+      REDIS_CONSUMER_NAME: worker-1
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_USER: ""
+      SMTP_PASS: ""
+      SMTP_FROM: noreply@trackflow.io
+      PDF_STORAGE_PATH: /data/reports
+      GEOIP_PROVIDER: geoip2
+    volumes:
+      - reports_data:/data/reports
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres_data:
+  redis_data:
+  reports_data:

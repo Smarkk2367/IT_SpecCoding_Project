@@ -11,9 +11,9 @@ Dane z briefu: 200 000 kliknięć/miesiąc dziś → 2 000 000 za rok
 ```
 Kliknięć / dzień (dziś):           ~ 6700
 Kliknięć / sekundę (dziś):         ~ 0.08
-Kliknięć / dzień (za rok): ~ 66 700
+Kliknięć / dzień (za rok):        ~ 66 700
 Kliknięć / sekundę (za rok):       ~ 0.8
-Rekordów w tabeli clicks po roku:   ~ 24 000
+Rekordów w tabeli clicks po roku:  ~ 24 000 000
 Szacowana wielkość tabeli clicks:  ~ 13/14 GB (500 B na klik)
 Raporty PDF / tydzień:             teraz 40, za rok 200 (każdy dostaje 8.00 + max 15 min)
 ```
@@ -37,8 +37,9 @@ Zapis kliknięcia jest asynchroniczny ponieważ redirect musi być natychmiastow
 | Marketer | Aktor | Tworzy linki, przegląda dane, generuje raporty |
 | Klient agencji | Aktor | Otrzymuje raporty, udostępnia linki klikaczom |
 | Osoba klikająca | Aktor | Klika w link |
-| Email Provider | System zewnętrzny | geolokalizacja IP |
-| Docelowa strona WWW | System zewnętrzny | wysyłanie e-maili |
+| Email Provider | System zewnętrzny | wysyłanie e-maili |
+| GeoIP Database/Service | System zewnętrzny | geolokalizacja IP |
+| Docelowa strona WWW | System zewnętrzny | strona docelowa redirectu |
 
 ---
 
@@ -46,7 +47,7 @@ Zapis kliknięcia jest asynchroniczny ponieważ redirect musi być natychmiastow
 
 | Kontener | Technologia | Odpowiedzialność |
 |----------|-------------|-----------------|
-| Web API | Go + Fiber | Tworzenie linków, obsługa dashboardu, szybkie redirecty |
+| Web API | Go + net/http + chi | Tworzenie linków, obsługa dashboardu, szybkie redirecty |
 | Redis | Redis + Redis Streams | cache, kolejkowanie, statystyki |
 | Worker |  Go Worker | Przetwarzanie kliknięć, GeoIP, User-Agent parsing, agregacje, alerty, generowanie raportów|
 | PostgreSQL | PostgreSQL | Przetwarzanie linków, kliknięć i agregatów statystycznych |
@@ -108,6 +109,7 @@ Co gdy Redis jest down:  Fallback do PostgreSQL dla lookupu linku. Kliknięcie z
 ```
 Co gwarantuje że dane nie zginą:   Redis Streams z włączoną persystencją oraz zapis kliknięcia do PostgreSQL
 Jak zapewniasz idempotentność:     Każde kliknięcie otrzymuje unikalny event_id, przed zapisem Worker sprawdza, czy event_id został już przetworzony
+```
 
 ---
 
@@ -124,6 +126,7 @@ Jak zapewniasz idempotentność:     Każde kliknięcie otrzymuje unikalny event
 Dlaczego async:          Bo generowanie raportu jest kosztowne i nie może blokować requestu HTTP ani wpływać na SLA redirectów / dashboardu
 Gdzie jest przechowywany PDF:     W obiekcie storage, a w PostgreSQL trzymana jest tylko metadana i link do pliku
 Jak marketer dostaje info:        Dashboard polling/WebSocket/webhook status update + e-mail z linkiem do pobrania PDF po zakończeniu generowania
+```
 
 ---
 
@@ -144,10 +147,25 @@ Jak marketer dostaje info:        Dashboard polling/WebSocket/webhook status upd
 | Tabela | Kolumna(y) | Uzasadnienie |
 |--------|-----------|--------------|
 | links | short_code (UNIQUE) | Krytyczne dla redirectu — O(1) lookup skróconego linku do URL docelowego |
-| links | client_id, campaign_id | Szybkie filtrowanie linków per klient/kampania w dashboardzei |
+| links | client_id, campaign_name | Szybkie filtrowanie linków per klient/kampania w dashboardzie |
 | links | expires_at| Skanowanie i wygaszanie linków (cleanup joby / walidacja aktywności)|
 | clicks | link_id, created_at | Podstawowy wzorzec zapytań statystycznych (time-series per link) |
 | clicks | country | Top countries bez pełnego skanowania tabeli |
 | clicks | device_type | Top devices |
 | clicks | referrer | Analiza źródeł ruchu |
 | clicks | event_id (UNIQUE)| idempotencja |
+| reports | status, created_at | Polling listy raportów i filtrowanie po statusie |
+| report_links | link_id | Wyszukiwanie raportów obejmujących konkretny link |
+| failed_events | event_id (UNIQUE) | Idempotencja zapisu DLQ i reprocessing |
+| outbox_events | status, created_at | Requeue lokalnych eventów, gdy Redis był chwilowo niedostępny |
+| outbox_events | event_id (UNIQUE) | Idempotencja lokalnego bufora publishera |
+
+---
+
+## 9. Ujednolicenia implementacyjne
+
+- Backend API implementujemy w Go na `net/http` + `chi`. Wzmianka o Fiber była niespójna ze stackiem projektu i nie obowiązuje.
+- Worker implementujemy w Go jako osobny kontener. Nie używamy Node.js jako drugiego runtime dla workerów w v1.
+- Biblioteki wskazane w WORKER.md należy czytać jako wymagania funkcjonalne, nie jako narzucony ekosystem JS.
+- Tabela `clients` jest wymagana, bo istnieją endpointy `/api/clients`, raporty per klient oraz separacja danych klientów.
+- `reports.file_path` jest typem `text`, bo przechowuje ścieżkę lub URL do PDF, nie UUID.
