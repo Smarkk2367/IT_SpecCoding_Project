@@ -76,7 +76,7 @@ Worker korzysta z GeoIP Database/Service, aby na podstawie adresu IP określić
 > Dlaczego kliknięcie nie idzie od razu do bazy?
 > Uzależniłoby to redirect od bazy (trzeba by czekać na zapis)
 > Co trzymasz w cache i dlaczego?
-> Mapowanie, Datę wygaśnięcia, ID kampanii i klienta, Licznik statystyk realtime (Redirect nie musi strzelać do postgresa - mniejsze latency) 
+> Mapowanie (shorturl - targeturl), Datę wygaśnięcia, ID kampanii i klienta, Licznik statystyk realtime (Redirect nie musi strzelać do postgresa - mniejsze latency) 
 
 ---
 
@@ -84,14 +84,14 @@ Worker korzysta z GeoIP Database/Service, aby na podstawie adresu IP określić
 
 | Krok | Opis | Czas (ms) |
 |------|------|-----------|
-| 1 | | ~___ |
-| 2 | | ~___ |
-| 3 | | ~___ |
-| **Suma** | | **~___** |
+| 1 | odczyt shorturl z redisa i walidacja daty wygaśnięcia | ~ 2 ms |
+| 2 | Zapis zdarzenia kliknięcia do Redis Streams | ~1 ms |
+| 3 | Wysłanie odpowiedzi HTTP z docelowym URL| ~ 5 ms |
+| **Suma** | | **~8 ms** |
 
 ```
-Co przy cache miss:      _______________________________________
-Co gdy Redis jest down:  _______________________________________
+Co przy cache miss:      Pobieram link z PostgreSQL, zapisuję go do Redis i obsługuję redirect, cache zostaje uzupełniony dla kolejnych żądań
+Co gdy Redis jest down:  Fallback do PostgreSQL dla lookupu linku. Kliknięcie zapisuję lokalnie (np. persistent queue/outbox) i odtwarzam po odzyskaniu Redis. Redirect nadal działa, ale z większą latencją.
 ```
 
 ---
