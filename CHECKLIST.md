@@ -34,30 +34,30 @@
 
 ## Kontrakty
 
-- [ ] API.md: endpoint redirect opisany
-- [ ] API.md: endpoint stats z wszystkimi polami response
-- [ ] API.md: endpoint reports — 202 + polling
-- [ ] EVENTS.md: click.recorded — payload + kroki consumer + retry
-- [ ] EVENTS.md: idempotency opisana
-- [ ] EVENTS.md: cron weekly-report — kroki
-- [ ] EVENTS.md: cron alert-no-clicks — deduplikacja
-- [ ] EVENTS.md: DLQ — co się dzieje
-- [ ] WORKER.md: geolokalizacja — biblioteka + fallback
-- [ ] WORKER.md: PDF — biblioteka + gdzie plik
-- [ ] WORKER.md: e-mail — provider
+- [x] API.md: endpoint redirect opisany
+- [x] API.md: endpoint stats z wszystkimi polami response
+- [x] API.md: endpoint reports — 202 + polling
+- [x] EVENTS.md: click.recorded — payload + kroki consumer + retry
+- [x] EVENTS.md: idempotency opisana
+- [x] EVENTS.md: cron weekly-report — kroki
+- [x] EVENTS.md: cron alert-no-clicks — deduplikacja
+- [x] EVENTS.md: DLQ — co się dzieje
+- [x] WORKER.md: geolokalizacja — biblioteka + fallback
+- [x] WORKER.md: PDF — biblioteka + gdzie plik
+- [x] WORKER.md: e-mail — provider
 
 ## CLAUDE.md
 
-- [ ] Stack wypełniony (język, framework, kolejka)
-- [ ] Sekcja "Dodatkowe instrukcje" wypełniona
-- [ ] Seed danych opisany
+- [x] Stack wypełniony (język, framework, kolejka)
+- [x] Sekcja "Dodatkowe instrukcje" wypełniona
+- [x] Seed danych opisany
 
 ## docker-compose.yml
 
-- [ ] Stworzona konwencja infrastruktury
-- [ ] JWT_SECRET wypełniony
-- [ ] Zmienne środowiskowe API kompletne
-- [ ] Zmienne środowiskowe Worker kompletne
+- [x] Stworzona konwencja infrastruktury
+- [x] JWT_SECRET wypełniony
+- [x] Zmienne środowiskowe API kompletne
+- [x] Zmienne środowiskowe Worker kompletne
 
 ---
 
@@ -66,7 +66,7 @@
 > Gdy wszystkie punkty odhaczone — otwórz terminal w katalogu projektu, wpisz `claude`, wklej:
 
 ```
-Jesteś seniorem [WYPEŁNIJ: język i framework].
+Jesteś seniorem Go.
 
 Przeczytaj w tej kolejności:
 1. docs/BRIEF.md

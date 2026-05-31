@@ -88,7 +88,7 @@ Dockerfile dla każdego serwisu piszesz razem z agentem po wypełnieniu dokument
 > Otwórz terminal w katalogu projektu, wpisz `claude`, a następnie wklej prompt.
 
 ```
-Jesteś seniorem [WYPEŁNIJ: język i framework, np. "TypeScript z Fastify"].
+Jesteś seniorem Go.
 
 Przeczytaj w tej kolejności:
 1. docs/BRIEF.md
