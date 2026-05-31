@@ -19,11 +19,10 @@
 
 ## ADR
 
-- [ ] ADR-001 (backend): min. 2 opcje, uzasadnienie do briefu
-- [ ] ADR-002 (baza): min. 2 opcje
-- [ ] ADR-003 (cache): odwołanie do liczb z back-of-envelope
-- [ ] ADR-004 (kolejka): uzasadnienie "dane nie mogą zginąć"
-- [ ] ADR-005+: każda inna istotna decyzja
+- [x] ADR-001 (backend): min. 2 opcje, uzasadnienie do briefu
+- [x] ADR-002 (baza): min. 2 opcje
+- [x] ADR-003 (cache): odwołanie do liczb z back-of-envelope
+- [x] ADR-004 (kolejka): uzasadnienie "dane nie mogą zginąć"
 
 ## Model danych
 

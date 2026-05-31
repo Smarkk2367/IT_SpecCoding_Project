@@ -27,53 +27,51 @@
 
 ## Tabela: links
 
-> 📝 Wypełnij wszystkie pola.
 
 | Kolumna | Typ | Ograniczenia | Opis |
 |---------|-----|--------------|------|
-| id | | | |
-| short_code | | UNIQUE, NOT NULL | generowany kod np. xK9mP |
-| original_url | | NOT NULL | |
-| created_by | | FK → users.id | |
-| expires_at | | NULL = nie wygasa | |
-| created_at | | | |
-| [WYPEŁNIJ inne] | | | |
+| id | uuid | PK | unikalny identyfikator linku |
+| short_code | text | UNIQUE, NOT NULL | generowany kod np. xK9mP |
+| original_url | text | NOT NULL | docelowy URL |
+| created_by | uuid | FK → users.id | właściciel linku (marketer) |
+| campaign_name | text | NULL | opcjonalna nazwa kampanii |
+| client_id | uuid | NULL | klient agencji (multi-tenant separation) |
+| expires_at | timestamptz | NULL | nie wygasa |
+| is_active | boolean | NOT NULL DEFAULT true | szybka walidacja aktywności |
+| created_at | timestamptz | NOT NULL | czas utworzenia |
 
 ---
 
 ## Tabela: clicks
 
-> 📝 Wypełnij. Ta tabela urośnie do milionów rekordów — typy danych mają znaczenie.
-
 | Kolumna | Typ | Ograniczenia | Opis |
-|---------|-----|--------------|------|
-| id | | | |
-| link_id | | FK → links.id | |
-| clicked_at | | NOT NULL | czas kliknięcia |
-| country | | NULL | z geolokalizacji |
-| city | | NULL | |
-| device_type | | NULL, enum: mobile/desktop/tablet | |
-| browser | | NULL | |
-| os | | NULL | |
-| referrer | | NULL | |
-| ip_hash | | NULL | zanonimizowane IP |
-| event_id | | UNIQUE, NOT NULL | idempotency key z eventu |
+| id | bigserial | PK | szybki insert (time-series) |
+| link_id	uuid | FK → links.id | referencja do linku |
+| clicked_at | timestamptz | NOT NULL | czas kliknięcia |
+| country | text | NULL | GeoIP |
+| city | text | NULL | GeoIP |
+| device_type | text | NULL | enum: mobile/desktop/tablet |
+| browser | text | NULL | |
+| os | text | NULL | |	
+| referrer | text | NULL | źródło ruchu |
+| ip_hash | text | NULL | zanonimizowane IP |
+| event_id| uuid | UNIQUE, NOT NULL | idempotency key |
+| user_agent | text | NULL | raw UA (do późniejszej analizy) |
 
 ---
 
 ## Tabela: reports
 
-> 📝 Wypełnij.
 
 | Kolumna | Typ | Ograniczenia | Opis |
 |---------|-----|--------------|------|
-| id | | | |
-| status | | NOT NULL, enum: pending/processing/done/failed | |
-| requested_by | | FK → users.id | |
-| file_path | | NULL | ścieżka do PDF gdy gotowy |
-| error_message | | NULL | |
-| created_at | | | |
-| completed_at | | NULL | |
+| id | uuid | PK | identyfikator raportu |
+| status | text | NOT NULL, enum: pending/processing/done/failed | |
+| requested_by | uuid | FK → users.id | marketer |
+| file_path | uuid | NULL | ścieżka do PDF gdy gotowy |
+| error_message | text | NULL | |
+| created_at | timestampz | NOT NULL | |
+| completed_at | timestampz | NULL | |
 
 ---
 
@@ -82,7 +80,8 @@
 ```
 users     1--* links       (marketer tworzy wiele linków)
 links     1--* clicks      (link ma wiele kliknięć)
-[UZUPEŁNIJ]
+users     1--* reports     (marketer generuje raporty)
+links     *--1 users       (created_by)
 ```
 
 ---
@@ -91,5 +90,7 @@ links     1--* clicks      (link ma wiele kliknięć)
 
 | Co | Gdzie | Dlaczego nie w PG |
 |----|-------|-------------------|
-| Cache redirectu (short_code → URL) | Redis | |
-| [UZUPEŁNIJ] | | |
+| Cache redirectu (short_code → URL) | Redis | wymagany sub-ms lookup w hot path redirectu |
+| Kolejka kliknięć (event stream raw) | Redis Streams | buffer dla at-least-once delivery + odciążenie DB |
+| Realtime liczniki dashboardu | Redis | uniknięcie agregacji SQL na milionach rekordów |
+| Session / burst dedup buffer | Redis | szybka idempotencja i ochrona przed spam/bot traffic |
