@@ -26,11 +26,11 @@
 
 ## Model danych
 
-- [ ] Tabela links: wszystkie pola z typami
-- [ ] Tabela clicks: pole event_id (idempotency) jest
-- [ ] Tabela reports: statusy są
-- [ ] Relacje opisane
-- [ ] Sekcja Redis wypełniona
+- [x] Tabela links: wszystkie pola z typami
+- [x] Tabela clicks: pole event_id (idempotency) jest
+- [x] Tabela reports: statusy są
+- [x] Relacje opisane
+- [x] Sekcja Redis wypełniona
 
 ## Kontrakty
 
