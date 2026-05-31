@@ -17,7 +17,6 @@ Rekordów w tabeli clicks po roku:   ~ 24 000
 Szacowana wielkość tabeli clicks:  ~ 13/14 GB (500 B na klik)
 Raporty PDF / tydzień:             teraz 40, za rok 200 (każdy dostaje 8.00 + max 15 min)
 ```
-
 Wnioski:
 
 ```
@@ -32,22 +31,14 @@ Zapis kliknięcia jest asynchroniczny ponieważ redirect musi być natychmiastow
 
 ## 2. C1 — Context Diagram
 
-```
-Narysuj ASCII lub opisz.
-Format: [Aktor] --co robi--> [TRACKFLOW] --co wysyła--> [Zewnętrzny system]
-
-
-
-
-```
 
 | Element | Typ | Co robi |
 |---------|-----|---------|
-| Marketer | Aktor | |
-| Klient agencji | Aktor | |
-| Osoba klikająca | Aktor | |
-| [?] | System zewnętrzny | geolokalizacja IP |
-| [?] | System zewnętrzny | wysyłanie e-maili |
+| Marketer | Aktor | Tworzy linki, przegląda dane, generuje raporty |
+| Klient agencji | Aktor | Otrzymuje raporty, udostępnia linki klikaczom |
+| Osoba klikająca | Aktor | Klika w link |
+| Email Provider | System zewnętrzny | geolokalizacja IP |
+| Docelowa strona WWW | System zewnętrzny | wysyłanie e-maili |
 
 ---
 
