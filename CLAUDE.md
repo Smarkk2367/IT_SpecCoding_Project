@@ -1,17 +1,9 @@
-# CLAUDE.md — Instrukcje dla agenta
-
-> 📝 DO WYPEŁNIENIA przez zespół.
-> Ten plik agent czyta jako pierwszy przed każdą sesją.
-> Im dokładniejszy — tym mniej agent pyta i zgaduje.
-
----
+# CLAUDE.md — Instrukcje dla agenta (TrackFlow)
 
 ## Kim jesteś i co budujesz
 
-```
-Jesteś seniorem [WYPEŁNIJ: język i framework] implementującym TrackFlow —
+Jesteś seniorem Go backend engineer implementującym TrackFlow —
 system skracania i śledzenia linków dla agencji marketingowej.
-```
 
 ---
 
@@ -31,26 +23,24 @@ Jeśli cokolwiek jest niejasne — ZATRZYMAJ SIĘ i zapytaj. Nie zgaduj.
 
 ## Stack technologiczny
 
-```
 Backend:
-  Język:        [WYPEŁNIJ]
-  Framework:    [WYPEŁNIJ]
-  ORM:          [WYPEŁNIJ]
+  Język:        Go
+  Framework:    net/http + chi router
+  ORM:          sqlc (lub pgx + ręczne query dla hot path)
 
 Frontend:
-  Framework:    [WYPEŁNIJ]
-  Stylowanie:   [WYPEŁNIJ]
+  Framework:    React + Vite
+  Stylowanie:   TailwindCSS
 
 Infrastruktura:
   Cache:        Redis
-  Kolejka:      [WYPEŁNIJ — z ADR-004]
+  Kolejka:      Redis Streams (BullMQ pattern)
   Baza danych:  PostgreSQL
   E-mail (dev): Mailhog
 
 Testy:
-  Jednostkowe:  [WYPEŁNIJ]
-  Integracyjne: [WYPEŁNIJ]
-```
+  Jednostkowe:  Go test (testing + testify)
+  Integracyjne: Go test + docker-compose env
 
 ---
 
@@ -58,57 +48,65 @@ Testy:
 
 **Kontrakty są nienaruszalne**
 - API implementujesz DOKŁADNIE zgodnie z docs/contracts/API.md
-- Payload eventów DOKŁADNIE zgodny z docs/contracts/EVENTS.md
+- Eventy DOKŁADNIE zgodnie z docs/contracts/EVENTS.md
 
-**Redirect jest krytyczny**
-- GET /:short_code musi odpowiedzieć w < 80ms
-- Kolejność: sprawdź Redis → miss → sprawdź PG → zapisz do Redis → 302 → opublikuj event
-- Publikacja eventu jest ASYNCHRONICZNA — nie blokuje 302
+---
 
-**At-least-once delivery**
-- Consumer sprawdza event_id przed przetworzeniem
-- ACK dopiero po zapisie do bazy
+## Redirect (krytyczny SLA)
 
-**Testy są obowiązkowe**
-- Po każdym module uruchom testy
-- Testy z WORKER.md sekcja "Testy które agent musi napisać" są obowiązkowe
+- GET /:short_code musi odpowiedzieć < 80ms
+- Flow:
+  1. Redis lookup
+  2. fallback PostgreSQL
+  3. write-through cache update
+  4. return 302
+  5. async publish click.recorded
+
+- NIC co blokuje Redis/DB nie może opóźnić 302
+
+---
+
+## Event processing (at-least-once)
+
+- consumer MUST check event_id before processing
+- insert musi być idempotentny (UNIQUE(event_id))
+- ACK dopiero po sukcesie zapisu
+
+---
+
+## Testy są obowiązkowe
+
+- każdy krok musi kończyć się uruchomieniem testów
+- testy z WORKER.md są mandatory acceptance criteria
 
 ---
 
 ## Kolejność implementacji
 
-Po każdym kroku uruchom testy i zaraportuj.
-
-```
-Krok 1:  Inicjalizacja projektu, Docker Compose, Dockerfile(i), zmienne środowiskowe
-Krok 2:  Schemat bazy danych + migracje
-Krok 3:  Auth — login, JWT middleware
-Krok 4:  Endpoint redirect GET /:short_code (z cache Redis)
-Krok 5:  Publisher eventu click.recorded
-Krok 6:  CRUD linków
-Krok 7:  Consumer click.recorded (UA parser + geo + zapis)
-Krok 8:  Endpointy statystyk
-Krok 9:  Consumer report.requested + PDF
-Krok 10: Consumer notification.send + e-mail
-Krok 11: Cron weekly-report
-Krok 12: Cron alert-no-clicks
-Krok 13: Frontend — auth, dashboard, lista linków
-Krok 14: Frontend — statystyki i wykresy
-Krok 15: Frontend — raporty (polling statusu)
-Krok 16: Testy integracyjne end-to-end
-Krok 17: Weryfikacja docker-compose up
-```
+Krok 1:  Docker Compose + struktura projektu
+Krok 2:  PostgreSQL schema + migrations
+Krok 3:  Redis init + healthcheck
+Krok 4:  Auth (JWT)
+Krok 5:  Redirect endpoint (hot path)
+Krok 6:  Click event publisher
+Krok 7:  Worker consumer click.recorded
+Krok 8:  Links CRUD
+Krok 9:  Stats aggregation endpoints
+Krok 10: Reports async pipeline
+Krok 11: Notifications
+Krok 12: Cron jobs
+Krok 13: Frontend dashboard
+Krok 14: Tests E2E
+Krok 15: docker-compose up verification
 
 ---
 
 ## Format raportowania
 
-```
-Krok N ukończony
-  Zbudowałem: [1 zdanie]
-  Testy: [X passed, Y failed]
-  Do sprawdzenia przez zespół: [tak/nie + co]
-```
+Krok N ukończony:
+- co zrobiono: 1–2 zdania
+- testy: X passed / Y failed
+- ryzyka: jeśli istnieją
 
 ---
 
@@ -116,32 +114,4 @@ Krok N ukończony
 
 ```bash
 curl -o /dev/null -s -w "Total: %{time_total}s\n" http://localhost:3000/xK9mP
-# Oczekiwane: < 0.080s
-```
-
----
-
-## Dane testowe
-
-Utwórz seed który dodaje:
-- 2 użytkowników: marketer@test.com i client@test.com (hasło: test123)
-- 5 linków z różnymi krótkimi kodami
-- 100 kliknięć z ostatnich 7 dni
-
----
-
-## Dodatkowe instrukcje
-
-> Wpisz tutaj co agent powinien wiedzieć a czego nie ma wyżej.
-
-```
-Przykłady:
-- Limit linków per użytkownik: ___
-- Kod krótki: ___ znaków, generowany przez ___
-- Wygląd dashboardu: ___
-- Nie używaj biblioteki X ponieważ ___
-```
-
-1.
-2.
-3.
+# target: < 0.080s
